@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Klang Valley Transit Map</title>
+    <title>Klang Valley Transit Map & Router</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
     <div class="app-container">
@@ -17,19 +17,147 @@
             <div class="logo-area">
                 <div class="logo-icon">🚇</div>
                 <div class="logo-text">
-                    <h1>Klang Valley Rail Map</h1>
-                    <span class="subtext">Integrated Transit System</span>
+                    <h1 id="app-title">KV Transit Map</h1>
+                    <span class="subtext">Integrated Route Planner</span>
                 </div>
+            </div>
+            <nav class="nav-links">
+                <button id="nav-map" class="nav-btn active">🗺️ Map</button>
+                <button id="nav-plan" class="nav-btn">🧭 Plan</button>
+                <button id="nav-settings" class="nav-btn-icon" title="Database Settings">⚙️</button>
+            </nav>
         </header>
         
         <main class="main-content">
-            <!-- Map Display Area -->
-            <div id="pdf-container" class="pdf-viewer-container"></div>
+            <!-- Tab 1: Map View -->
+            <div id="view-map" class="tab-view active">
+                <div id="pdf-container" class="pdf-viewer-container"></div>
+            </div>
+            
+            <!-- Tab 2: Plan View -->
+            <div id="view-plan" class="tab-view">
+                <div class="planner-layout">
+                    <!-- Left Column: Setup Route -->
+                    <div class="planner-sidebar">
+                        <div class="glass-card planner-card">
+                            <h2>Find Route</h2>
+                            <form id="route-form" onsubmit="return false;">
+                                <div class="form-group">
+                                    <label>Origin Station</label>
+                                    <div class="custom-select-wrapper">
+                                        <input type="text" id="origin-input" placeholder="Type station name..." autocomplete="off">
+                                        <div id="origin-dropdown" class="select-dropdown"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Destination Station</label>
+                                    <div class="custom-select-wrapper">
+                                        <input type="text" id="dest-input" placeholder="Type station name..." autocomplete="off">
+                                        <div id="dest-dropdown" class="select-dropdown"></div>
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Exclude Lines</label>
+                                    <div class="exclude-checklist" id="exclude-lines-checklist">
+                                        <!-- Populated dynamically -->
+                                    </div>
+                                </div>
+                                <button type="submit" id="btn-submit-plan" class="btn btn-primary btn-block">Search Journey 🚀</button>
+                            </form>
+                        </div>
+                    </div>
+                    
+                    <!-- Right Column: Results -->
+                    <div class="planner-results">
+                        <div id="results-placeholder" class="results-placeholder glass-card">
+                            <div class="placeholder-icon">🧭</div>
+                            <p>Select your origin, destination, and line preferences, then click "Search Journey" to plan your route.</p>
+                        </div>
+                        <div id="results-container" class="results-container hidden">
+                            <div class="results-header glass-card">
+                                <div class="fare-display">
+                                    <span class="fare-label">Cashless Fare</span>
+                                    <span class="fare-value" id="res-fare">RM 0.00</span>
+                                </div>
+                                <div class="journey-meta">
+                                    <div class="meta-item">
+                                        <span class="meta-label">Distance</span>
+                                        <span class="meta-value" id="res-dist">0.0 km</span>
+                                    </div>
+                                    <div class="meta-item">
+                                        <span class="meta-label">Transfers</span>
+                                        <span class="meta-value" id="res-transfers">0</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="route-details glass-card">
+                                <h3>Journey Directions</h3>
+                                <div class="route-timeline" id="route-timeline-container">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
     
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <h2>Database Settings</h2>
+                <span id="close-settings" class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="data-source-select">Database Mode</label>
+                    <select id="data-source-select" class="form-control">
+                        <option value="local">Local Mode (Offline Cache)</option>
+                        <option value="firebase">Firebase Firestore (Cloud Sync)</option>
+                    </select>
+                </div>
+                
+                <div id="firebase-config-section" class="hidden">
+                    <p class="config-help">Enter your Firebase web configuration details below:</p>
+                    <div class="form-group">
+                        <label for="fb-apikey">API Key</label>
+                        <input type="text" id="fb-apikey" class="form-control" placeholder="AIzaSy...">
+                    </div>
+                    <div class="form-group">
+                        <label for="fb-projectid">Project ID</label>
+                        <input type="text" id="fb-projectid" class="form-control" placeholder="my-transit-project">
+                    </div>
+                    <div class="form-group text-center">
+                        <button id="save-firebase-config" class="btn btn-primary">Connect & Save</button>
+                    </div>
+                </div>
+                
+                <div id="firebase-status" class="db-status-badge offline">
+                    Status: Offline (Local Mode)
+                </div>
+                
+                <div class="db-populator-section">
+                    <h3>Database Populator</h3>
+                    <p class="populator-help">Populating will write the complete Klang Valley station and connection graph (130+ stations) to your Firestore collection <code>stations</code>.</p>
+                    <button id="btn-populate" class="btn btn-secondary btn-block" disabled>Populate Firestore Database ⚙️</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase compatibility scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
     <!-- PDF.js library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-    <script src="app.js"></script>
+    
+    <!-- Route Database and Finder Logic -->
+    <script src="transit-data.js?v=1.2"></script>
+    
+    <!-- Application Orchestrator -->
+    <script src="app.js?v=1.2"></script>
 </body>
 </html>

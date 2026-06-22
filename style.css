@@ -164,24 +164,6 @@ body {
     font-weight: 600;
 }
 
-/* Fullscreen Mode override */
-body.fullscreen-mode .header {
-    display: none;
-}
-
-body.fullscreen-mode .main-content {
-    height: 100vh;
-}
-
-body.fullscreen-mode .pdf-viewer-container {
-    padding: 0;
-}
-
-body.fullscreen-mode .pdf-page-canvas {
-    border-radius: 0;
-    border: none;
-}
-
 /* Scrollbar Styling */
 ::-webkit-scrollbar {
     width: 6px;

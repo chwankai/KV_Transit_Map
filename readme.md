@@ -1,6 +1,4 @@
-# KV Transit Map
-
-![KV Transit Map Demo](kv_transit_map.png)
+# KL Transit Map
 
 ## Overview
 A sleek, modern web application visualizing the Klang Valley transit system. It features an interactive map with dark‑mode glassmorphism design, vibrant gradient backgrounds, and smooth micro‑animations for an engaging user experience.
@@ -14,8 +12,8 @@ A sleek, modern web application visualizing the Klang Valley transit system. It 
 ## Setup
 1. Clone the repository:
    ```bash
-   git clone https://github.com/chwankai/KV_Transit_Map.git
-   cd KV_Transit_Map
+   git clone https://github.com/chwankai/KL_Transit_Map.git
+   cd KL_Transit_Map
    ```
 2. Open `index.html` in a modern browser (Chrome, Safari, Firefox).
 3. No additional build steps are required – the app uses vanilla HTML, CSS, and JavaScript.

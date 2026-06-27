@@ -1345,3 +1345,33 @@ body {
     }
 }
 
+/* Floating Show Tracker Button */
+.floating-bus-btn {
+    position: absolute;
+    bottom: 2.25rem;
+    left: 2.25rem;
+    z-index: 20;
+    border-radius: 30px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 700;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.floating-bus-btn.hidden {
+    display: none !important;
+}
+
+/* Sidebar Hidden State Layout Toggles */
+.bus-layout.sidebar-hidden .bus-sidebar {
+    display: none !important;
+}
+
+.bus-layout.sidebar-hidden .bus-map-container {
+    height: calc(100% - 2.5rem) !important;
+    width: calc(100% - 2.5rem) !important;
+    margin: 1.25rem !important;
+}
+
+

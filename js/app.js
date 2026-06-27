@@ -1046,4 +1046,27 @@ document.addEventListener('DOMContentLoaded', () => {
             updateMarkersOnMap();
         });
     }
+
+    // Toggle Tracker Sidebar Visibility
+    const btnHideBusSidebar = document.getElementById('btn-hide-bus-sidebar');
+    const btnShowBusSidebar = document.getElementById('btn-show-bus-sidebar');
+    const busLayout = document.querySelector('.bus-layout');
+
+    if (btnHideBusSidebar && btnShowBusSidebar && busLayout) {
+        btnHideBusSidebar.addEventListener('click', () => {
+            busLayout.classList.add('sidebar-hidden');
+            btnShowBusSidebar.classList.remove('hidden');
+            if (busMap) {
+                google.maps.event.trigger(busMap, 'resize');
+            }
+        });
+
+        btnShowBusSidebar.addEventListener('click', () => {
+            busLayout.classList.remove('sidebar-hidden');
+            btnShowBusSidebar.classList.add('hidden');
+            if (busMap) {
+                google.maps.event.trigger(busMap, 'resize');
+            }
+        });
+    }
 });

@@ -123,6 +123,7 @@
 
             <!-- Tab 3: Bus View -->
             <div id="view-bus" class="tab-view">
+                <button id="btn-show-bus-sidebar" class="btn btn-primary floating-bus-btn hidden">Show Tracker 📋</button>
                 <div class="bus-layout">
                     <!-- Left Column: Bus sidebar -->
                     <div class="bus-sidebar glass-card">
@@ -144,6 +145,9 @@
                         </div>
                         <div class="bus-list" id="bus-list-container">
                             <!-- Dynamically populated route list -->
+                        </div>
+                        <div class="sidebar-footer" style="margin-top: 1rem; flex-shrink: 0;">
+                            <button id="btn-hide-bus-sidebar" class="btn btn-secondary btn-block">Hide Tracker 🙈</button>
                         </div>
                     </div>
                     

@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupExcludeChecklist();
 
     // 5. PDF Map Viewer Rendering
-    let currentMapUrl = 'Klang Valley Rail Map.pdf';
+    let currentMapUrl = 'maps/Klang Valley Rail Map.pdf';
     const { pdfjsLib } = window;
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     
@@ -207,11 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (btnToggleMap) {
         btnToggleMap.addEventListener('click', () => {
-            if (currentMapUrl === 'Klang Valley Rail Map.pdf') {
-                currentMapUrl = 'Circle Line.pdf';
+            if (currentMapUrl === 'maps/Klang Valley Rail Map.pdf') {
+                currentMapUrl = 'maps/Circle Line.pdf';
                 btnToggleMap.innerHTML = 'Standard Map 🗺️';
             } else {
-                currentMapUrl = 'Klang Valley Rail Map.pdf';
+                currentMapUrl = 'maps/Klang Valley Rail Map.pdf';
                 btnToggleMap.innerHTML = 'Upcoming Map 🗺️';
             }
             renderPdf();

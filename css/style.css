@@ -1273,7 +1273,7 @@ body {
 }
 
 .route-desc {
-    font-size: 0.8rem;
+    font-size: 0.725rem;
     font-weight: 500;
     color: var(--text-primary);
 }
@@ -1283,8 +1283,13 @@ body {
     color: var(--text-secondary);
     font-size: 0.7rem;
     font-weight: 700;
-    padding: 0.15rem 0.35rem;
+    padding: 0.2rem 0.5rem;
     border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
 }
 
 .bus-map-container {
@@ -1326,7 +1331,25 @@ body {
     color: #0f172a;
 }
 
-/* PC and Mobile text switches */
+.bus-toggle-inactive {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    user-select: none;
+    cursor: pointer;
+}
+
+.bus-toggle-inactive input[type="checkbox"] {
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    accent-color: var(--accent-color);
+}
+
 /* PC and Mobile text switches */
 .pc-text {
     display: inline;
@@ -1431,5 +1454,12 @@ body {
         margin: 1.25rem !important;
     }
 }
+
+/* Faded opacity styling for inactive bus route cards */
+.bus-route-item.inactive-route {
+    opacity: 0.55;
+    background-color: rgba(30, 41, 59, 0.2);
+}
+
 
 

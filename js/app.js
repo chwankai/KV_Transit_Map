@@ -506,6 +506,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let busRoutesMap = {}; // key: routeId, value: { name, activeCount }
     let activeBuses = []; // list of decoded vehicles
     let selectedRouteIds = new Set();
+    let hasInitializedSelection = false;
     let mapsLoading = false;
     let mapsLoaded = false;
     let selectedRouteColors = {}; // Cache colors for routes to make them look harmonized
@@ -520,9 +521,60 @@ document.addEventListener('DOMContentLoaded', () => {
         },
         melaka: {
             url: "https://api.data.gov.my/gtfs-realtime/vehicle-position/mybas-melaka/",
-            center: { lat: 2.1896, lng: 102.2501 },
+            center: { lat: 2.2418614, lng: 102.2387632 },
             zoom: 12
         }
+    };
+
+    // Static database of all myBAS routes for J- and M- lines
+    const staticRoutes = {
+        johor: [
+            { id: "J10", name: "J10", desc: "JB Sentral - Kota Tinggi" },
+            { id: "J11", name: "J11", desc: "JB Sentral - AEON Dato' Onn" },
+            { id: "J13", name: "J13", desc: "JB Sentral - Larkin Sentral" },
+            { id: "J15", name: "J15", desc: "JB Sentral - Mid Valley Southkey" },
+            { id: "J16", name: "J16", desc: "Angsana - Toppen Tebrau" },
+            { id: "J20", name: "J20", desc: "JB Sentral - Masai" },
+            { id: "J21", name: "J21", desc: "JB Sentral - Permas Jaya" },
+            { id: "J22", name: "J22", desc: "JB Sentral - Scientex" },
+            { id: "J30", name: "J30", desc: "JB Sentral - Kulai" },
+            { id: "J31", name: "J31", desc: "JB Sentral - Pulai Mutiara" },
+            { id: "J32", name: "J32", desc: "JB Sentral - Selesa Jaya" },
+            { id: "J33", name: "J33", desc: "JB Sentral - Sri Yaacob" },
+            { id: "J34", name: "J34", desc: "JB Sentral - Sutera Mall" },
+            { id: "J40", name: "J40", desc: "Larkin Sentral - Gelang Patah" },
+            { id: "J42", name: "J42", desc: "Gelang Patah - Pendas" },
+            { id: "J44", name: "J44", desc: "Larkin Sentral - Puteri Harbour" },
+            { id: "J50", name: "J50", desc: "Larkin Sentral - Pontian" },
+            { id: "J100", name: "J100", desc: "JB Sentral - KSL City Mall" },
+            { id: "J200", name: "J200", desc: "Terminal Masai - PPR Seri Alam" },
+            { id: "J205", name: "J205", desc: "Terminal Masai - Lotus Kota Masai" },
+            { id: "J300", name: "J300", desc: "Terminal Kulai - Putri Kulai" }
+        ],
+        melaka: [
+            { id: "M10A", name: "M10A", desc: "Melaka Sentral - MITC & UTeM" },
+            { id: "M10B", name: "M10B", desc: "Melaka Sentral - MITC" },
+            { id: "M11", name: "M11", desc: "Melaka Sentral - Bukit Katil" },
+            { id: "M12", name: "M12", desc: "Melaka Sentral - Airport Batu Berendam" },
+            { id: "M13", name: "M13", desc: "Melaka Sentral - Taman Inang Sari" },
+            { id: "M14", name: "M14", desc: "Melaka Sentral - Bertam Ulu" },
+            { id: "M15", name: "M15", desc: "Melaka Sentral - Pulau Gadong" },
+            { id: "M16", name: "M16", desc: "Melaka Sentral - Paya Luboh" },
+            { id: "M17", name: "M17", desc: "Melaka Sentral - Tangga Batu" },
+            { id: "M20", name: "M20", desc: "Melaka Sentral - Tampin" },
+            { id: "M20X", name: "M20X", desc: "Melaka Sentral - Alor Gajah" },
+            { id: "M21", name: "M21", desc: "Melaka Sentral - Tampin via Durian Tunggal" },
+            { id: "M21X", name: "M21X", desc: "Melaka Sentral - Alor Gajah via Durian Tunggal" },
+            { id: "M22", name: "M22", desc: "Melaka Sentral - Bandar Vendor" },
+            { id: "M23", name: "M23", desc: "Melaka Sentral - Masjid Tanah" },
+            { id: "M23X", name: "M23X", desc: "Melaka Sentral - Masjid Tanah" },
+            { id: "M30", name: "M30", desc: "Melaka Sentral - Batang Melaka via Selandar" },
+            { id: "M31", name: "M31", desc: "Melaka Sentral - Batang Melaka via Tebong" },
+            { id: "M32", name: "M32", desc: "Melaka Sentral - Jasin" },
+            { id: "M33", name: "M33", desc: "Jasin - Taman Seri Asahan" },
+            { id: "M100", name: "M100", desc: "Bandaraya Melaka Feeder" },
+            { id: "M101", name: "M101", desc: "Pasar Melaka Feeder" }
+        ]
     };
 
     // Minimal GTFS-RT Protobuf JSON definition
@@ -629,7 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function formatRouteId(routeId) {
-        return routeId.replace(/CWLMYJB|MYJB|JB/g, '').trim();
+        return routeId.replace(/CWLMYJB|MYJB|JB|CWLMYMK|MYMK|MK/g, '').trim();
     }
 
     function startBusTracking() {
@@ -785,12 +837,36 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
                 
+                // Initialize with all static routes for the active region
                 busRoutesMap = {};
-                for (const routeId in foundRoutes) {
-                    busRoutesMap[routeId] = {
-                        name: formatRouteId(routeId),
-                        activeCount: foundRoutes[routeId]
+                const regionStatic = staticRoutes[activeRegion] || [];
+                regionStatic.forEach(route => {
+                    busRoutesMap[route.id] = {
+                        name: route.name,
+                        desc: route.desc,
+                        activeCount: 0
                     };
+                });
+                
+                // Merge counts from live feed and dynamically discover new routes
+                for (const rawRouteId in foundRoutes) {
+                    const cleanRouteId = formatRouteId(rawRouteId);
+                    if (busRoutesMap[cleanRouteId]) {
+                        busRoutesMap[cleanRouteId].activeCount = foundRoutes[rawRouteId];
+                    } else {
+                        busRoutesMap[cleanRouteId] = {
+                            name: cleanRouteId,
+                            desc: `Route ${cleanRouteId}`,
+                            activeCount: foundRoutes[rawRouteId]
+                        };
+                    }
+                }
+                
+                if (!hasInitializedSelection) {
+                    for (const routeId in busRoutesMap) {
+                        selectedRouteIds.add(routeId);
+                    }
+                    hasInitializedSelection = true;
                 }
                 
                 updateRouteChecklist();
@@ -810,36 +886,37 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.getElementById('bus-list-container');
         if (!container) return;
         
-        const checkedList = Array.from(selectedRouteIds);
-        const sortedRouteIds = Object.keys(busRoutesMap).sort((a, b) => {
+        const hideInactive = document.getElementById('chk-hide-inactive')?.checked || false;
+        
+        let sortedRouteIds = Object.keys(busRoutesMap);
+        if (hideInactive) {
+            sortedRouteIds = sortedRouteIds.filter(routeId => busRoutesMap[routeId].activeCount > 0);
+        }
+        
+        sortedRouteIds.sort((a, b) => {
             return busRoutesMap[a].name.localeCompare(busRoutesMap[b].name, undefined, { numeric: true });
         });
         
-        const selectAllByDefault = selectedRouteIds.size === 0 && checkedList.length === 0;
         container.innerHTML = '';
         
         if (sortedRouteIds.length === 0) {
-            container.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-secondary);font-size:0.85rem;">No active buses found at this hour.</div>`;
+            container.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-secondary);font-size:0.85rem;">No active routes found matching filter.</div>`;
             return;
         }
         
         sortedRouteIds.forEach(routeId => {
             const rData = busRoutesMap[routeId];
-            const isChecked = selectAllByDefault || selectedRouteIds.has(routeId);
-            
-            if (selectAllByDefault) {
-                selectedRouteIds.add(routeId);
-            }
+            const isChecked = selectedRouteIds.has(routeId);
             
             const item = document.createElement('div');
-            item.className = `bus-route-item ${isChecked ? 'selected' : ''}`;
+            item.className = `bus-route-item ${isChecked ? 'selected' : ''} ${rData.activeCount === 0 ? 'inactive-route' : ''}`;
             const routeColor = getRouteColor(routeId);
             
             item.innerHTML = `
                 <div class="bus-route-left">
                     <input type="checkbox" value="${routeId}" ${isChecked ? 'checked' : ''}>
                     <span class="route-badge" style="background-color: ${routeColor}">${rData.name}</span>
-                    <span class="route-desc">Route ${rData.name}</span>
+                    <span class="route-desc">${rData.desc || 'Route ' + rData.name}</span>
                 </div>
                 <span class="bus-count-badge">${rData.activeCount} live</span>
             `;
@@ -872,7 +949,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const seenVehicles = new Set();
         
         activeBuses.forEach(bus => {
-            if (!selectedRouteIds.has(bus.routeId)) {
+            const cleanRouteId = formatRouteId(bus.routeId);
+            if (!selectedRouteIds.has(cleanRouteId)) {
                 if (busMarkers[bus.vehicleId]) {
                     busMarkers[bus.vehicleId].marker.setMap(null);
                     delete busMarkers[bus.vehicleId];
@@ -1000,6 +1078,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Clear routes state
         selectedRouteIds.clear();
+        hasInitializedSelection = false;
         busRoutesMap = {};
         
         // Update map camera
@@ -1044,6 +1123,13 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedRouteIds.clear();
             updateRouteChecklist();
             updateMarkersOnMap();
+        });
+    }
+
+    const chkHideInactive = document.getElementById('chk-hide-inactive');
+    if (chkHideInactive) {
+        chkHideInactive.addEventListener('change', () => {
+            updateRouteChecklist();
         });
     }
 

@@ -510,6 +510,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let mapsLoading = false;
     let mapsLoaded = false;
     let selectedRouteColors = {}; // Cache colors for routes to make them look harmonized
+    let activeInfoWindow = null;
+    let activeInfoWindowVehicleId = null;
     
     // Region configuration for Johor and Melaka
     let activeRegion = 'johor';
@@ -678,6 +680,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const color = `hsl(${h}, 85%, 45%)`;
         selectedRouteColors[routeId] = color;
         return color;
+    }
+
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371; // Radius of the earth in km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c; // Distance in km
     }
 
     function formatRouteId(routeId) {
@@ -942,6 +956,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function updateInfoWindowContent(vehicleId) {
+        if (!activeInfoWindow || activeInfoWindowVehicleId !== vehicleId) return;
+        const data = busMarkers[vehicleId];
+        if (!data) return;
+        
+        const cleanName = formatRouteId(data.routeId);
+        const localTime = new Date(data.timestamp).toLocaleTimeString();
+        const currentLat = data.marker.getPosition().lat().toFixed(5);
+        const currentLng = data.marker.getPosition().lng().toFixed(5);
+        
+        const content = `
+            <div class="bus-info-window">
+                <h3>myBAS Route ${cleanName}</h3>
+                <p><strong>Plate:</strong> ${data.licensePlate}</p>
+                <p><strong>Speed:</strong> ${data.speed} km/h</p>
+                <p><strong>Last Updated:</strong> ${localTime}</p>
+                <p><strong>Coordinates:</strong> ${currentLat}, ${currentLng}</p>
+            </div>
+        `;
+        activeInfoWindow.setContent(content);
+    }
+
     function updateMarkersOnMap() {
         if (!busMap) return;
         
@@ -965,6 +1001,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (busMarkers[bus.vehicleId]) {
                 const data = busMarkers[bus.vehicleId];
                 
+                // Calculate speed from coordinate shift if the API speed is unavailable/0
+                let calculatedSpeed = Number(bus.speed);
+                if (calculatedSpeed <= 0.05 && bus.timestamp > data.timestamp) {
+                    const distKm = getDistance(data.targetPos.lat, data.targetPos.lng, bus.lat, bus.lng);
+                    const hours = (bus.timestamp - data.timestamp) / 3600000;
+                    if (hours > 0) {
+                        const rawSpeed = distKm / hours;
+                        if (rawSpeed >= 0 && rawSpeed < 130) {
+                            calculatedSpeed = rawSpeed;
+                        }
+                    }
+                }
+                
                 data.startPos = {
                     lat: data.marker.getPosition().lat(),
                     lng: data.marker.getPosition().lng()
@@ -973,9 +1022,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 data.startTime = now;
                 data.targetTime = now + 15000;
                 
-                data.speed = bus.speed;
+                data.speed = calculatedSpeed.toFixed(1);
                 data.timestamp = bus.timestamp;
                 data.licensePlate = bus.licensePlate;
+                
+                updateInfoWindowContent(bus.vehicleId);
             } else {
                 const markerIcon = {
                     path: google.maps.SymbolPath.CIRCLE,
@@ -999,21 +1050,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                const infoWindow = new google.maps.InfoWindow();
                 marker.addListener('click', () => {
-                    const data = busMarkers[bus.vehicleId];
-                    const localTime = new Date(data.timestamp).toLocaleTimeString();
-                    const content = `
-                        <div class="bus-info-window">
-                            <h3>myBAS Route ${cleanName}</h3>
-                            <p><strong>Plate:</strong> ${data.licensePlate}</p>
-                            <p><strong>Speed:</strong> ${data.speed} km/h</p>
-                            <p><strong>Last Updated:</strong> ${localTime}</p>
-                            <p><strong>Coordinates:</strong> ${data.marker.getPosition().lat().toFixed(5)}, ${data.marker.getPosition().lng().toFixed(5)}</p>
-                        </div>
-                    `;
-                    infoWindow.setContent(content);
-                    infoWindow.open(busMap, marker);
+                    if (!activeInfoWindow) {
+                        activeInfoWindow = new google.maps.InfoWindow();
+                        activeInfoWindow.addListener('closeclick', () => {
+                            activeInfoWindowVehicleId = null;
+                        });
+                    }
+                    activeInfoWindowVehicleId = bus.vehicleId;
+                    updateInfoWindowContent(bus.vehicleId);
+                    activeInfoWindow.open(busMap, marker);
                 });
                 
                 busMarkers[bus.vehicleId] = {
@@ -1052,6 +1098,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lng = data.startPos.lng + (data.targetPos.lng - data.startPos.lng) * t;
                 
                 data.marker.setPosition(new google.maps.LatLng(lat, lng));
+                
+                // Real-time update open InfoWindow coordinate values
+                if (activeInfoWindowVehicleId === vehicleId) {
+                    updateInfoWindowContent(vehicleId);
+                }
             }
         }
         busAnimFrame = requestAnimationFrame(animateMarkers);
@@ -1075,6 +1126,10 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         busMarkers = {};
+        
+        // Reset InfoWindow state
+        activeInfoWindowVehicleId = null;
+        if (activeInfoWindow) activeInfoWindow.close();
         
         // Clear routes state
         selectedRouteIds.clear();
